@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  shows       Show[]
+  createdAt   DateTime @default(now())
+}
+
+model Venue {
+  id      String  @id @default(cuid())
+  name    String
+  city    String
+  address String?
+  shows   Show[]
+}
+
+model Show {
+  id        String    @id @default(cuid())
+  event     Event     @relation(fields: [eventId], references: [id])
+  eventId   String
+  venue     Venue     @relation(fields: [venueId], references: [id])
+  venueId   String
+  startsAt  DateTime
+  endsAt    DateTime
+  seats     Seat[]
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Seat {
+  id          String       @id @default(cuid())
+  show        Show         @relation(fields: [showId], references: [id])
+  showId      String
+  row         String
+  number      Int
+  category    String
+  price       Float
+  status      SeatStatus   @default(AVAILABLE)
+  lockedUntil DateTime?
+  lockedBy    String?
+  bookingSeat BookingSeat?
+
+  @@unique([showId, row, number])
+}
+
+enum SeatStatus {
+  AVAILABLE
+  LOCKED
+  BOOKED
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  show        Show          @relation(fields: [showId], references: [id])
+  showId      String
+  status      BookingStatus @default(PENDING)
+  totalAmount Float
+  expiresAt   DateTime?
+  seats       BookingSeat[]
+  createdAt   DateTime      @default(now())
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+model BookingSeat {
+  id        String  @id @default(cuid())
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  bookingId String
+  seat      Seat    @relation(fields: [seatId], references: [id])
+  seatId    String  @unique
+}
